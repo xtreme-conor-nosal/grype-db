@@ -5,8 +5,8 @@ import (
 	"sort"
 
 	"github.com/anchore/grype-db/internal"
-	"github.com/anchore/grype-db/pkg/db"
-	"github.com/anchore/grype-db/pkg/db/model"
+	"github.com/anchore/grype-db/pkg/db/v1"
+	"github.com/anchore/grype-db/pkg/db/v1/model"
 	"github.com/go-test/deep"
 	"github.com/jinzhu/gorm"
 
@@ -105,12 +105,9 @@ func (s *Store) GetVulnerability(namespace, packageName string) ([]db.Vulnerabil
 }
 
 // AddVulnerability saves one or more vulnerabilities into the sqlite3 store.
-func (s *Store) AddVulnerability(vulnerabilities ...*db.Vulnerability) error {
+func (s *Store) AddVulnerability(vulnerabilities ...db.Vulnerability) error {
 	for _, vulnerability := range vulnerabilities {
-		if vulnerability == nil {
-			continue
-		}
-		m := model.NewVulnerabilityModel(*vulnerability)
+		m := model.NewVulnerabilityModel(vulnerability)
 
 		result := s.vulnDb.Create(&m)
 		if result.Error != nil {
@@ -125,17 +122,17 @@ func (s *Store) AddVulnerability(vulnerabilities ...*db.Vulnerability) error {
 }
 
 // GetVulnerabilityMetadata retrieves metadata for the given vulnerability ID relative to a specific record source.
-func (s *Store) GetVulnerabilityMetadata(id, namespace string) (*db.VulnerabilityMetadata, error) {
+func (s *Store) GetVulnerabilityMetadata(id, recordSource string) (*db.VulnerabilityMetadata, error) {
 	var models []model.VulnerabilityMetadataModel
 
-	result := s.vulnDb.Where(&model.VulnerabilityMetadataModel{ID: id, Namespace: namespace}).Find(&models)
+	result := s.vulnDb.Where(&model.VulnerabilityMetadataModel{ID: id, RecordSource: recordSource}).Find(&models)
 	if result.Error != nil {
 		return nil, result.Error
 	}
 
 	switch {
 	case len(models) > 1:
-		return nil, fmt.Errorf("found multiple metadatas for single ID=%q Namespace=%q", id, namespace)
+		return nil, fmt.Errorf("found multiple metadatas for single ID=%q RecordSource=%q", id, recordSource)
 	case len(models) == 1:
 		metadata, err := models[0].Inflate()
 		if err != nil {
@@ -150,13 +147,9 @@ func (s *Store) GetVulnerabilityMetadata(id, namespace string) (*db.Vulnerabilit
 
 // nolint:gocognit,funlen
 // AddVulnerabilityMetadata stores one or more vulnerability metadata models into the sqlite DB.
-func (s *Store) AddVulnerabilityMetadata(metadata ...*db.VulnerabilityMetadata) error {
+func (s *Store) AddVulnerabilityMetadata(metadata ...db.VulnerabilityMetadata) error {
 	for _, m := range metadata {
-		if m == nil {
-			continue
-		}
-
-		existing, err := s.GetVulnerabilityMetadata(m.ID, m.Namespace)
+		existing, err := s.GetVulnerabilityMetadata(m.ID, m.RecordSource)
 		if err != nil {
 			return fmt.Errorf("failed to verify existing entry: %w", err)
 		}
@@ -164,35 +157,30 @@ func (s *Store) AddVulnerabilityMetadata(metadata ...*db.VulnerabilityMetadata) 
 		if existing != nil {
 			// merge with the existing entry
 
+			cvssV3Diffs := deep.Equal(existing.CvssV3, m.CvssV3)
+			cvssV2Diffs := deep.Equal(existing.CvssV2, m.CvssV2)
+
 			switch {
 			case existing.Severity != m.Severity:
 				return fmt.Errorf("existing metadata has mismatched severity (%q!=%q)", existing.Severity, m.Severity)
 			case existing.Description != m.Description:
 				return fmt.Errorf("existing metadata has mismatched description (%q!=%q)", existing.Description, m.Description)
+			case existing.CvssV2 != nil && len(cvssV2Diffs) > 0:
+				return fmt.Errorf("existing metadata has mismatched cvss-v2: %+v", cvssV2Diffs)
+			case existing.CvssV3 != nil && len(cvssV3Diffs) > 0:
+				return fmt.Errorf("existing metadata has mismatched cvss-v3: %+v", cvssV3Diffs)
+			default:
+				existing.CvssV2 = m.CvssV2
+				existing.CvssV3 = m.CvssV3
 			}
 
-		incoming:
-			// go through all incoming CVSS and see if they are already stored.
-			// If they exist already in the database then skip adding them,
-			// preventing a duplicate
-			for _, incomingCvss := range m.Cvss {
-				for _, existingCvss := range existing.Cvss {
-					if len(deep.Equal(incomingCvss, existingCvss)) == 0 {
-						// duplicate found, so incoming CVSS shouldn't get added
-						continue incoming
-					}
-				}
-				// a duplicate CVSS entry wasn't found, so append the incoming CVSS
-				existing.Cvss = append(existing.Cvss, incomingCvss)
-			}
-
-			links := internal.NewStringSetFromSlice(existing.URLs)
-			for _, l := range m.URLs {
+			links := internal.NewStringSetFromSlice(existing.Links)
+			for _, l := range m.Links {
 				links.Add(l)
 			}
 
-			existing.URLs = links.ToSlice()
-			sort.Strings(existing.URLs)
+			existing.Links = links.ToSlice()
+			sort.Strings(existing.Links)
 
 			newModel := model.NewVulnerabilityMetadataModel(*existing)
 			result := s.vulnDb.Save(&newModel)
@@ -206,7 +194,7 @@ func (s *Store) AddVulnerabilityMetadata(metadata ...*db.VulnerabilityMetadata) 
 			}
 		} else {
 			// this is a new entry
-			newModel := model.NewVulnerabilityMetadataModel(*m)
+			newModel := model.NewVulnerabilityMetadataModel(m)
 			result := s.vulnDb.Create(&newModel)
 			if result.Error != nil {
 				return result.Error

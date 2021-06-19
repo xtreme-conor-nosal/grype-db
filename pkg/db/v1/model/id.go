@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/anchore/grype-db/pkg/db"
+	"github.com/anchore/grype-db/pkg/db/v1"
 )
 
 const (

@@ -1,9 +1,11 @@
-package db
+package v3
 
 import (
 	"context"
 	"time"
 )
+
+// TODO: delete me
 
 type DataProvider interface {
 	Age() time.Time

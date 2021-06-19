@@ -8,14 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/anchore/grype-db/pkg/db"
-	"github.com/anchore/grype-db/pkg/db/model"
-	"github.com/anchore/grype-db/pkg/db/reader"
+	v3 "github.com/anchore/grype-db/pkg/db/v3"
+
+	"github.com/anchore/grype-db/pkg/db/v3/model"
+	"github.com/anchore/grype-db/pkg/db/v3/reader"
 	"github.com/go-test/deep"
 	"github.com/stretchr/testify/assert"
 )
 
-func assertIDReader(t *testing.T, reader db.IDReader, expected db.ID) {
+func assertIDReader(t *testing.T, reader v3.IDReader, expected v3.ID) {
 	t.Helper()
 	if actual, err := reader.GetID(); err != nil {
 		t.Fatalf("failed to get ID: %+v", err)
@@ -42,7 +43,7 @@ func TestStore_GetID_SetID(t *testing.T) {
 		t.Fatalf("could not create store: %+v", err)
 	}
 
-	expected := db.ID{
+	expected := v3.ID{
 		BuildTimestamp: time.Now().UTC(),
 		SchemaVersion:  2,
 	}
@@ -63,7 +64,7 @@ func TestStore_GetID_SetID(t *testing.T) {
 
 }
 
-func assertVulnerabilityReader(t *testing.T, reader db.VulnerabilityStoreReader, namespace, name string, expected []*db.Vulnerability) {
+func assertVulnerabilityReader(t *testing.T, reader v3.VulnerabilityStoreReader, namespace, name string, expected []*v3.Vulnerability) {
 	if actual, err := reader.GetVulnerability(namespace, name); err != nil {
 		t.Fatalf("failed to get Vulnerability: %+v", err)
 	} else {
@@ -94,7 +95,7 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 		t.Fatalf("could not create store: %+v", err)
 	}
 
-	extra := []*db.Vulnerability{
+	extra := []*v3.Vulnerability{
 		{
 			ID:                "my-cve-33333",
 			PackageName:       "package-name-2",
@@ -102,7 +103,7 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 			VersionConstraint: "< 1.0",
 			VersionFormat:     "semver",
 			CPEs:              []string{"a-cool-cpe"},
-			RelatedVulnerabilities: []db.VulnerabilityReference{
+			RelatedVulnerabilities: []v3.VulnerabilityReference{
 				{
 					ID:        "another-cve",
 					Namespace: "nvd",
@@ -112,9 +113,9 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 					Namespace: "nvd",
 				},
 			},
-			Fix: db.Fix{
+			Fix: v3.Fix{
 				Versions: []string{"2.0.1"},
-				State:    db.FixedState,
+				State:    v3.FixedState,
 			},
 		},
 		{
@@ -124,7 +125,7 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 			VersionConstraint: "< 509.2.2",
 			VersionFormat:     "semver",
 			CPEs:              []string{"a-cool-cpe"},
-			RelatedVulnerabilities: []db.VulnerabilityReference{
+			RelatedVulnerabilities: []v3.VulnerabilityReference{
 				{
 					ID:        "another-cve",
 					Namespace: "nvd",
@@ -134,13 +135,13 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 					Namespace: "nvd",
 				},
 			},
-			Fix: db.Fix{
-				State: db.NotFixedState,
+			Fix: v3.Fix{
+				State: v3.NotFixedState,
 			},
 		},
 	}
 
-	expected := []*db.Vulnerability{
+	expected := []*v3.Vulnerability{
 		{
 			ID:                "my-cve",
 			PackageName:       "package-name",
@@ -148,7 +149,7 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 			VersionConstraint: "< 1.0",
 			VersionFormat:     "semver",
 			CPEs:              []string{"a-cool-cpe"},
-			RelatedVulnerabilities: []db.VulnerabilityReference{
+			RelatedVulnerabilities: []v3.VulnerabilityReference{
 				{
 					ID:        "another-cve",
 					Namespace: "nvd",
@@ -158,9 +159,9 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 					Namespace: "nvd",
 				},
 			},
-			Fix: db.Fix{
+			Fix: v3.Fix{
 				Versions: []string{"1.0.1"},
-				State:    db.FixedState,
+				State:    v3.FixedState,
 			},
 		},
 		{
@@ -170,7 +171,7 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 			VersionConstraint: "< 509.2.2",
 			VersionFormat:     "semver",
 			CPEs:              []string{"a-cool-cpe"},
-			RelatedVulnerabilities: []db.VulnerabilityReference{
+			RelatedVulnerabilities: []v3.VulnerabilityReference{
 				{
 					ID:        "another-cve",
 					Namespace: "nvd",
@@ -180,9 +181,9 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 					Namespace: "nvd",
 				},
 			},
-			Fix: db.Fix{
+			Fix: v3.Fix{
 				Versions: []string{"4.0.5"},
-				State:    db.FixedState,
+				State:    v3.FixedState,
 			},
 		},
 	}
@@ -216,7 +217,7 @@ func TestStore_GetVulnerability_SetVulnerability(t *testing.T) {
 
 }
 
-func assertVulnerabilityMetadataReader(t *testing.T, reader db.VulnerabilityMetadataStoreReader, id, namespace string, expected db.VulnerabilityMetadata) {
+func assertVulnerabilityMetadataReader(t *testing.T, reader v3.VulnerabilityMetadataStoreReader, id, namespace string, expected v3.VulnerabilityMetadata) {
 	if actual, err := reader.GetVulnerabilityMetadata(id, namespace); err != nil {
 		t.Fatalf("failed to get metadata: %+v", err)
 	} else if actual == nil {
@@ -253,7 +254,7 @@ func assertVulnerabilityMetadataReader(t *testing.T, reader db.VulnerabilityMeta
 
 }
 
-func sortMetadataCvss(cvss []db.Cvss) {
+func sortMetadataCvss(cvss []v3.Cvss) {
 	sort.Slice(cvss, func(i, j int) bool {
 		// first, sort by Vector
 		if cvss[i].Vector > cvss[j].Vector {
@@ -288,7 +289,7 @@ func TestStore_GetVulnerabilityMetadata_SetVulnerabilityMetadata(t *testing.T) {
 		t.Fatalf("could not create store: %+v", err)
 	}
 
-	total := []*db.VulnerabilityMetadata{
+	total := []*v3.VulnerabilityMetadata{
 		{
 			ID:           "my-cve",
 			RecordSource: "record-source",
@@ -296,14 +297,14 @@ func TestStore_GetVulnerabilityMetadata_SetVulnerabilityMetadata(t *testing.T) {
 			Severity:     "pretty bad",
 			URLs:         []string{"https://ancho.re"},
 			Description:  "best description ever",
-			Cvss: []db.Cvss{
+			Cvss: []v3.Cvss{
 				{
 					VendorMetadata: CustomMetadata{
 						Vendor:     "redhat",
 						SuperScore: "1000",
 					},
 					Version: "2.0",
-					Metrics: db.NewCvssMetrics(
+					Metrics: v3.NewCvssMetrics(
 						1.1,
 						2.2,
 						3.3,
@@ -312,7 +313,7 @@ func TestStore_GetVulnerabilityMetadata_SetVulnerabilityMetadata(t *testing.T) {
 				},
 				{
 					Version: "3.0",
-					Metrics: db.NewCvssMetrics(
+					Metrics: v3.NewCvssMetrics(
 						1.3,
 						2.1,
 						3.2,
@@ -329,10 +330,10 @@ func TestStore_GetVulnerabilityMetadata_SetVulnerabilityMetadata(t *testing.T) {
 			Severity:     "pretty bad",
 			URLs:         []string{"https://ancho.re"},
 			Description:  "worst description ever",
-			Cvss: []db.Cvss{
+			Cvss: []v3.Cvss{
 				{
 					Version: "2.0",
-					Metrics: db.NewCvssMetrics(
+					Metrics: v3.NewCvssMetrics(
 						4.1,
 						5.2,
 						6.3,
@@ -341,7 +342,7 @@ func TestStore_GetVulnerabilityMetadata_SetVulnerabilityMetadata(t *testing.T) {
 				},
 				{
 					Version: "3.0",
-					Metrics: db.NewCvssMetrics(
+					Metrics: v3.NewCvssMetrics(
 						1.4,
 						2.5,
 						3.6,
@@ -381,13 +382,13 @@ func TestStore_GetVulnerabilityMetadata_SetVulnerabilityMetadata(t *testing.T) {
 func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 	tests := []struct {
 		name     string
-		add      []db.VulnerabilityMetadata
-		expected db.VulnerabilityMetadata
+		add      []v3.VulnerabilityMetadata
+		expected v3.VulnerabilityMetadata
 		err      bool
 	}{
 		{
 			name: "go-case",
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 					ID:           "my-cve",
 					RecordSource: "record-source",
@@ -395,10 +396,10 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "worst description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -407,7 +408,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 						},
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -417,17 +418,17 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					},
 				},
 			},
-			expected: db.VulnerabilityMetadata{
+			expected: v3.VulnerabilityMetadata{
 				ID:           "my-cve",
 				RecordSource: "record-source",
 				Namespace:    "namespace",
 				Severity:     "pretty bad",
 				URLs:         []string{"https://ancho.re"},
 				Description:  "worst description ever",
-				Cvss: []db.Cvss{
+				Cvss: []v3.Cvss{
 					{
 						Version: "2.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							4.1,
 							5.2,
 							6.3,
@@ -436,7 +437,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					},
 					{
 						Version: "3.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							1.4,
 							2.5,
 							3.6,
@@ -448,7 +449,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 		},
 		{
 			name: "merge-links",
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 					ID:           "my-cve",
 					RecordSource: "record-source",
@@ -471,18 +472,18 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					URLs:         []string{"https://yahoo.com"},
 				},
 			},
-			expected: db.VulnerabilityMetadata{
+			expected: v3.VulnerabilityMetadata{
 				ID:           "my-cve",
 				RecordSource: "record-source",
 				Namespace:    "namespace",
 				Severity:     "pretty bad",
 				URLs:         []string{"https://ancho.re", "https://google.com", "https://yahoo.com"},
-				Cvss:         []db.Cvss{},
+				Cvss:         []v3.Cvss{},
 			},
 		},
 		{
 			name: "bad-severity",
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 					ID:           "my-cve",
 					RecordSource: "record-source",
@@ -503,7 +504,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 		{
 			name: "mismatch-description",
 			err:  true,
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 
 					ID:           "my-cve",
@@ -512,10 +513,10 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "best description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -524,7 +525,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 						},
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -540,10 +541,10 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "worst description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -552,7 +553,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 						},
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -566,7 +567,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 		{
 			name: "mismatch-cvss2",
 			err:  false,
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 					ID:           "my-cve",
 					RecordSource: "record-source",
@@ -574,10 +575,10 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "best description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -586,7 +587,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 						},
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -602,10 +603,10 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "best description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -614,7 +615,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 						},
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -624,17 +625,17 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					},
 				},
 			},
-			expected: db.VulnerabilityMetadata{
+			expected: v3.VulnerabilityMetadata{
 				ID:           "my-cve",
 				RecordSource: "record-source",
 				Namespace:    "namespace",
 				Severity:     "pretty bad",
 				URLs:         []string{"https://ancho.re"},
 				Description:  "best description ever",
-				Cvss: []db.Cvss{
+				Cvss: []v3.Cvss{
 					{
 						Version: "2.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							4.1,
 							5.2,
 							6.3,
@@ -643,7 +644,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					},
 					{
 						Version: "3.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							1.4,
 							2.5,
 							3.6,
@@ -652,7 +653,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					},
 					{
 						Version: "2.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							4.1,
 							5.2,
 							6.3,
@@ -665,7 +666,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 		{
 			name: "mismatch-cvss3",
 			err:  false,
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 					ID:           "my-cve",
 					RecordSource: "record-source",
@@ -673,10 +674,10 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "best description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -685,7 +686,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 						},
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -701,10 +702,10 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "best description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -713,7 +714,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 						},
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								0,
 								3.6,
@@ -723,17 +724,17 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					},
 				},
 			},
-			expected: db.VulnerabilityMetadata{
+			expected: v3.VulnerabilityMetadata{
 				ID:           "my-cve",
 				RecordSource: "record-source",
 				Namespace:    "namespace",
 				Severity:     "pretty bad",
 				URLs:         []string{"https://ancho.re"},
 				Description:  "best description ever",
-				Cvss: []db.Cvss{
+				Cvss: []v3.Cvss{
 					{
 						Version: "2.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							4.1,
 							5.2,
 							6.3,
@@ -742,7 +743,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					},
 					{
 						Version: "3.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							1.4,
 							2.5,
 							3.6,
@@ -751,7 +752,7 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 					},
 					{
 						Version: "3.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							1.4,
 							0,
 							3.6,
@@ -821,12 +822,12 @@ func TestStore_MergeVulnerabilityMetadata(t *testing.T) {
 func TestCvssScoresInMetadata(t *testing.T) {
 	tests := []struct {
 		name     string
-		add      []db.VulnerabilityMetadata
-		expected db.VulnerabilityMetadata
+		add      []v3.VulnerabilityMetadata
+		expected v3.VulnerabilityMetadata
 	}{
 		{
 			name: "append-cvss",
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 					ID:           "my-cve",
 					RecordSource: "record-source",
@@ -834,10 +835,10 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "worst description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -853,10 +854,10 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "worst description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -866,17 +867,17 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					},
 				},
 			},
-			expected: db.VulnerabilityMetadata{
+			expected: v3.VulnerabilityMetadata{
 				ID:           "my-cve",
 				RecordSource: "record-source",
 				Namespace:    "namespace",
 				Severity:     "pretty bad",
 				URLs:         []string{"https://ancho.re"},
 				Description:  "worst description ever",
-				Cvss: []db.Cvss{
+				Cvss: []v3.Cvss{
 					{
 						Version: "2.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							4.1,
 							5.2,
 							6.3,
@@ -885,7 +886,7 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					},
 					{
 						Version: "3.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							1.4,
 							2.5,
 							3.6,
@@ -897,7 +898,7 @@ func TestCvssScoresInMetadata(t *testing.T) {
 		},
 		{
 			name: "append-vendor-cvss",
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 					ID:           "my-cve",
 					RecordSource: "record-source",
@@ -905,10 +906,10 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "worst description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -924,10 +925,10 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "worst description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "2.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								4.1,
 								5.2,
 								6.3,
@@ -941,17 +942,17 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					},
 				},
 			},
-			expected: db.VulnerabilityMetadata{
+			expected: v3.VulnerabilityMetadata{
 				ID:           "my-cve",
 				RecordSource: "record-source",
 				Namespace:    "namespace",
 				Severity:     "pretty bad",
 				URLs:         []string{"https://ancho.re"},
 				Description:  "worst description ever",
-				Cvss: []db.Cvss{
+				Cvss: []v3.Cvss{
 					{
 						Version: "2.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							4.1,
 							5.2,
 							6.3,
@@ -960,7 +961,7 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					},
 					{
 						Version: "2.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							4.1,
 							5.2,
 							6.3,
@@ -976,7 +977,7 @@ func TestCvssScoresInMetadata(t *testing.T) {
 		},
 		{
 			name: "avoids-duplicate-cvss",
-			add: []db.VulnerabilityMetadata{
+			add: []v3.VulnerabilityMetadata{
 				{
 					ID:           "my-cve",
 					RecordSource: "record-source",
@@ -984,10 +985,10 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "worst description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -1003,10 +1004,10 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					Severity:     "pretty bad",
 					URLs:         []string{"https://ancho.re"},
 					Description:  "worst description ever",
-					Cvss: []db.Cvss{
+					Cvss: []v3.Cvss{
 						{
 							Version: "3.0",
-							Metrics: db.NewCvssMetrics(
+							Metrics: v3.NewCvssMetrics(
 								1.4,
 								2.5,
 								3.6,
@@ -1016,17 +1017,17 @@ func TestCvssScoresInMetadata(t *testing.T) {
 					},
 				},
 			},
-			expected: db.VulnerabilityMetadata{
+			expected: v3.VulnerabilityMetadata{
 				ID:           "my-cve",
 				RecordSource: "record-source",
 				Namespace:    "namespace",
 				Severity:     "pretty bad",
 				URLs:         []string{"https://ancho.re"},
 				Description:  "worst description ever",
-				Cvss: []db.Cvss{
+				Cvss: []v3.Cvss{
 					{
 						Version: "3.0",
-						Metrics: db.NewCvssMetrics(
+						Metrics: v3.NewCvssMetrics(
 							1.4,
 							2.5,
 							3.6,

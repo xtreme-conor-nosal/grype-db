@@ -1,3 +1,3 @@
-package db
+package v3
 
 const SchemaVersion = 3
